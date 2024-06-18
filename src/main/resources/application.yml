@@ -16,3 +16,6 @@ spring:
 server:
   address: localhost
   port: ${SERVER_PORT}
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 604800000 # 7일
