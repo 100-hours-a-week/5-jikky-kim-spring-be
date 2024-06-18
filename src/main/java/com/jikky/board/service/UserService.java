@@ -15,5 +15,5 @@ public interface UserService {
     void changePassword(Long userId, String password);
     User updateUser(Long userId, Map<String, String> userData, MultipartFile file);
     void deleteUser(Long userId);
-    User getSingleUser(Long userId);
+    User getSingleUser(String userId);
 }

@@ -1,21 +1,31 @@
 package com.jikky.board.service.impl;
 
+import com.jikky.board.service.CustomUserDetails;
 import com.jikky.board.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.jikky.board.model.User;
 import com.jikky.board.repository.UserRepository;
+import com.jikky.board.util.JwtTokenUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -26,11 +36,13 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Value("${server.address}")
-    private String serverAddress;
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
-    @Value("${server.port}")
-    private String serverPort;
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
+    private static final Logger logger = Logger.getLogger(UserServiceImpl.class.getName());
 
     private static final String UPLOAD_DIR = "uploads/avatar"; // 파일 저장 경로 설정
 
@@ -56,8 +68,7 @@ public class UserServiceImpl implements UserService {
         newUser.setEmail(userData.get("email"));
         newUser.setPassword(hash);
         newUser.setNickname(userData.get("nickname"));
-        String relativePath = "/uploads/avatar/" + fileName;
-        String fullUrl = "http://" + serverAddress + ":" + serverPort + relativePath;
+        String fullUrl = "/uploads/avatar/" + fileName;
         newUser.setAvatar(fullUrl);
 
         return userRepository.createUser(newUser);
@@ -65,11 +76,38 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> login(String email, String password) {
-        User user = userRepository.findUserByEmail(email);
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
+        try {
+            logger.log(Level.INFO, "Attempting to authenticate user: {0}", email);
+
+            // 이메일과 비밀번호를 사용하여 인증 시도
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
+            logger.log(Level.INFO, "hi: {0}", email);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 인증에 성공하면 JWT 토큰 생성
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String token = jwtTokenUtil.generateToken(userDetails.getUsername());
+
+            // 응답에 JWT 토큰 포함
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "login success");
+            response.put("user_id", userDetails.getUserId());
+            response.put("token", token);
+
+            logger.log(Level.INFO, "User {0} authenticated successfully", email);
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
+            logger.log(Level.WARNING, "Authentication failed for user {0}: Invalid email or password", email);
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid email or password"));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Unexpected error during authentication for user {0}", email);
+            logger.log(Level.SEVERE, "err {0}", e);
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body(Map.of("message", "Authentication failed"));
         }
-        return ResponseEntity.ok(Map.of("message", "login success", "user_id", user.getUserId()));
     }
 
     @Override
@@ -113,8 +151,7 @@ public class UserServiceImpl implements UserService {
             try {
                 Files.createDirectories(uploadPath);
                 file.transferTo(filePath.toFile());
-                String relativePath = "/uploads/avatar/" + fileName;
-                String fullUrl = "http://" + serverAddress + ":" + serverPort + relativePath;
+                String fullUrl = "/uploads/avatar/" + fileName;
                 user.setAvatar(fullUrl);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to store file", e);
@@ -137,7 +174,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getSingleUser(Long userId) {
-        return userRepository.findUserById(userId);
+    public User getSingleUser(String userId) {
+        return userRepository.findUserByEmail(userId);
     }
 }

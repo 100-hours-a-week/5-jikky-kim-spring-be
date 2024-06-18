@@ -1,17 +1,25 @@
 package com.jikky.board.config;
 
-import jakarta.servlet.http.HttpServletResponse;
+import com.jikky.board.filter.JwtRequestFilter;
+import com.jikky.board.service.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -19,47 +27,33 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final Logger logger = Logger.getLogger(SecurityConfig.class.getName());
+
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
+
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(withDefaults()) // CORS 설정 추가
                 .csrf(csrf -> csrf.disable()) // CSRF protection disabled
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/secure/**").authenticated() // 인증이 필요한 경로 설정
-                        .anyRequest().permitAll() // 그 외 모든 요청은 인증 없이 허락
-                )
-                .formLogin(form -> form
-                        .loginPage("/users/login")
-                        .loginProcessingUrl("/users/login")
-                        .successHandler(authenticationSuccessHandler()) // 로그인 성공 시 JSON 응답
-                        .failureUrl("/users/login?error=true")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/users/logout")
-                        .logoutSuccessHandler(logoutSuccessHandler()) // 로그아웃 성공 시 JSON 응답
-                        .permitAll()
+//                .authorizeHttpRequests(authorize -> authorize
+//                        .requestMatchers("/users/register", "/users/login", "/users/nickname/check", "/users/email/check", "/uploads/**").permitAll()
+//                        .anyRequest().authenticated()
+//                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션을 사용하지 않도록 설정
                 );
 
+        // JWT 필터를 UsernamePasswordAuthenticationFilter 전에 추가합니다.
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
+        logger.log(Level.INFO, "Security configuration completed");
+
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler() {
-        return (request, response, authentication) -> {
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\": \"login success\"}");
-        };
-    }
-
-    @Bean
-    public LogoutSuccessHandler logoutSuccessHandler() {
-        return (request, response, authentication) -> {
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\": \"logout success\"}");
-        };
     }
 
     @Bean
@@ -79,5 +73,10 @@ public class SecurityConfig {
                         .allowCredentials(true);
             }
         };
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }

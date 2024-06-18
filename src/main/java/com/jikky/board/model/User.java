@@ -3,7 +3,7 @@ package com.jikky.board.model;
 import java.sql.Timestamp;
 
 public class User {
-    private Long userId;
+    private String userId;
     private String email;
     private String nickname;
     private String password;
@@ -13,11 +13,11 @@ public class User {
     private Timestamp deletedAt;
 
     // Getters and setters
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
