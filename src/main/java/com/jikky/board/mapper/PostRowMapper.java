@@ -16,7 +16,9 @@ public class PostRowMapper implements RowMapper<Post> {
         post.setTitle(rs.getString("title"));
         post.setContent(rs.getString("content"));
         post.setPostImage(rs.getString("post_image"));
+        post.setCreatorAvatar(rs.getString("creator_avatar"));
         post.setUserId(rs.getLong("user_id"));
+        post.setCreatorNickname(rs.getString("creator_nickname"));
         post.setCreatedAt(rs.getTimestamp("created_at"));
         post.setUpdatedAt(rs.getTimestamp("updated_at"));
         post.setDeletedAt(rs.getTimestamp("deleted_at"));
