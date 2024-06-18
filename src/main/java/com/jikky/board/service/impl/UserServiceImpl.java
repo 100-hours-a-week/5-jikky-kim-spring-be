@@ -112,7 +112,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void logout() {
-        // Logout logic here (e.g., invalidate session)
+        SecurityContextHolder.clearContext();
     }
 
     @Override
