@@ -20,8 +20,9 @@ public class JwtTokenUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    public String generateToken(String username) {
+    public String generateToken(String username,Long userId) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("user_id", userId);
         return doGenerateToken(claims, username);
     }
 
@@ -40,8 +41,13 @@ public class JwtTokenUtil {
         return (tokenUsername.equals(username) && !isTokenExpired(token));
     }
 
-    public String getUserIdFromToken(String token) {
+    public String getUserEmailFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
+    }
+
+    public Long getUserIdFromToken(String token) {
+        final Claims claims = getAllClaimsFromToken(token);
+        return claims.get("user_id", Long.class);
     }
 
     public String getUsernameFromToken(String token) {

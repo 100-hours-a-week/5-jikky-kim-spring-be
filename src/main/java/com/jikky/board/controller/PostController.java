@@ -3,6 +3,7 @@ package com.jikky.board.controller;
 import com.jikky.board.model.Post;
 import com.jikky.board.model.Comment;
 import com.jikky.board.service.PostService;
+import com.jikky.board.util.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,10 @@ public class PostController {
     @Autowired
     private PostService postService;
 
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
     @GetMapping
     public ResponseEntity<?> getAllPost(@RequestParam int page, @RequestParam int limit) {
         List<Post> posts = postService.getAllPost(page, limit);
@@ -32,12 +37,19 @@ public class PostController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPost(@RequestParam Map<String, String> postData, @RequestParam MultipartFile file, HttpSession session) {
-        Long userId = (Long) session.getAttribute("user_id");
+    public ResponseEntity<?> createPost(@RequestParam Map<String, String> postData,
+                                        @RequestParam("post_image") MultipartFile file,
+                                        @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenUtil.getUserIdFromToken(token);
+
+
         Post post = new Post();
         post.setTitle(postData.get("title"));
         post.setContent(postData.get("content"));
 
+        // userId를 Long 타입으로 변환하여 사용
         Post newPost = postService.createPost(post, file, userId);
         return ResponseEntity.status(201).body(Map.of("message", "post created successfully", "newPost", newPost));
     }

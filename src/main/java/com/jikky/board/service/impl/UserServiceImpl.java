@@ -88,7 +88,7 @@ public class UserServiceImpl implements UserService {
 
             // 인증에 성공하면 JWT 토큰 생성
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String token = jwtTokenUtil.generateToken(userDetails.getUsername());
+            String token = jwtTokenUtil.generateToken(userDetails.getUsername(),userDetails.getUserId());
 
             // 응답에 JWT 토큰 포함
             Map<String, Object> response = new HashMap<>();

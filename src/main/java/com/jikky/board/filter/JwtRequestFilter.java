@@ -29,14 +29,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         final String requestTokenHeader = request.getHeader("Authorization");
 
-        String userId = null;
+        String userEmail = null;
         String jwtToken = null;
 
-        // JWT 토큰은 "Bearer "로 시작해야 합니다.
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
-                userId = jwtTokenUtil.getUsernameFromToken(jwtToken);
+                userEmail = jwtTokenUtil.getUserEmailFromToken(jwtToken);
             } catch (IllegalArgumentException e) {
                 logger.warn("Unable to get JWT Token", e);
             } catch (ExpiredJwtException e) {
@@ -45,10 +44,12 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         } else {
             logger.warn("JWT Token does not begin with Bearer String");
         }
+        logger.info("userEmail: " + userEmail);
+        logger.info("Authentication: " + SecurityContextHolder.getContext().getAuthentication());
 
         // 토큰을 받았으면 유효성 검사를 합니다.
-        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userId);
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
             // 토큰이 유효하면 수동으로 인증을 설정합니다.
             if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {

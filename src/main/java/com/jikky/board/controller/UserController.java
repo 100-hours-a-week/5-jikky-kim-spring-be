@@ -29,7 +29,7 @@ public class UserController {
             // JWT에서 "Bearer "를 제거하고 토큰만 추출합니다.
             String jwtToken = token.substring(7);
             // JWT에서 사용자 이름 (이메일) 을 가져옵니다.
-            String email = jwtTokenUtil.getUserIdFromToken(jwtToken);
+            String email = jwtTokenUtil.getUserEmailFromToken(jwtToken);
 
             User singleUser = userService.getSingleUser(email);
             System.out.println(singleUser);

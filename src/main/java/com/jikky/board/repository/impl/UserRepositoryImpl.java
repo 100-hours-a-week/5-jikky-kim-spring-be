@@ -21,7 +21,7 @@ public class UserRepositoryImpl implements UserRepository {
     public User createUser(User user) {
         String sql = "INSERT INTO USERS (email, password, nickname, avatar) VALUES (?, ?, ?, ?)";
         jdbcTemplate.update(sql, user.getEmail(), user.getPassword(), user.getNickname(), user.getAvatar());
-        String userId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", String.class);
+        Long userId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         user.setUserId(userId);
         return user;
     }
