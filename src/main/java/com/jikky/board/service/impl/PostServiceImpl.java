@@ -53,7 +53,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public void updatePost(Long postId, Post post, MultipartFile file) {
-        if (file != null) {
+        if (!file.isEmpty()) {
             String fileName = file.getOriginalFilename().split("\\.")[0] + "_" + System.currentTimeMillis() + "." + file.getOriginalFilename().split("\\.")[1];
             Path filePath = Paths.get(System.getProperty("user.dir"), IMAGE_PATH, fileName);
 

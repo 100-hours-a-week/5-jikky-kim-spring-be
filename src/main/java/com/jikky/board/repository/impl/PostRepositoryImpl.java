@@ -8,6 +8,7 @@ import com.jikky.board.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -58,10 +59,17 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public void updatePost(Long postId, Post post) {
-        String sql = post.getPostImage() != null ?
-                "UPDATE posts SET title = ?, content = ?, post_image = ? WHERE post_id = ?" :
-                "UPDATE posts SET title = ?, content = ? WHERE post_id = ?";
-        jdbcTemplate.update(sql, post.getTitle(), post.getContent(), post.getPostImage(), postId);
+        if(post.getPostImage() != null){
+            String sql =
+                    "UPDATE posts SET title = ?, content = ?, post_image = ? WHERE post_id = ?";
+            jdbcTemplate.update(sql, post.getTitle(), post.getContent(), post.getPostImage(), postId);
+        }else{
+            String sql =
+                    "UPDATE posts SET title = ?, content = ? WHERE post_id = ?";
+
+            jdbcTemplate.update(sql, post.getTitle(), post.getContent(),postId);
+        }
+
     }
 
     @Override

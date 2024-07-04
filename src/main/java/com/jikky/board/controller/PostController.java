@@ -55,11 +55,10 @@ public class PostController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updatePost(@PathVariable Long id, @RequestParam Map<String, String> postData, @RequestParam(required = false) MultipartFile file) {
+    public ResponseEntity<?> updatePost(@PathVariable Long id, @RequestParam Map<String, String> postData, @RequestParam(value = "post_image", required = false) MultipartFile file) {
         Post post = new Post();
         post.setTitle(postData.get("title"));
         post.setContent(postData.get("content"));
-
         postService.updatePost(id, post, file);
         return ResponseEntity.ok().body(Map.of("message", "post updated successfully"));
     }
@@ -77,8 +76,11 @@ public class PostController {
     }
 
     @PostMapping("/{postId}/comment")
-    public ResponseEntity<?> createComment(@PathVariable Long postId, @RequestBody Map<String, String> commentData, HttpSession session) {
-        Long userId = (Long) session.getAttribute("user_id");
+    public ResponseEntity<?> createComment(@PathVariable Long postId, @RequestBody Map<String, String> commentData,
+                                           @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenUtil.getUserIdFromToken(token);
+
         Comment comment = new Comment();
         comment.setPostId(postId);
         comment.setUserId(userId);
