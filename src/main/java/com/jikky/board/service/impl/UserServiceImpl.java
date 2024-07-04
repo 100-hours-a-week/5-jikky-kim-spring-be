@@ -144,8 +144,9 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-        if (file != null) {
-            String fileName = file.getOriginalFilename().split("\\.")[0] + "_" + System.currentTimeMillis() + "." + file.getOriginalFilename().split("\\.")[1];
+        if (!file.isEmpty()) {
+            String fileExtension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+            String fileName = file.getOriginalFilename().split("\\.")[0] + "_" + System.currentTimeMillis() + fileExtension;
             Path uploadPath = Paths.get(System.getProperty("user.dir"), UPLOAD_DIR);
             Path filePath = uploadPath.resolve(fileName);
             try {
