@@ -159,7 +159,6 @@ public class UserServiceImpl implements UserService {
             }
         }
         user.setNickname(userData.get("nickname"));
-        user.setEmail(userData.get("email"));
         userRepository.updateUser(userId, user);
         return user;
     }

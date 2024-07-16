@@ -1,5 +1,6 @@
 package com.jikky.board.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jikky.board.service.impl.UserServiceImpl;
 import com.jikky.board.util.JwtTokenUtil;
 import org.slf4j.Logger;
@@ -32,8 +33,21 @@ public class UserController {
             String jwtToken = token.substring(7);
             String email = jwtTokenUtil.getUserEmailFromToken(jwtToken);
             User singleUser = userService.getSingleUser(email);
-            logger.info("User fetched: {}", singleUser);
-            return ResponseEntity.ok(Map.of("status", "success", "user", singleUser));
+            if (singleUser == null) {
+                return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+            }
+
+            // User 객체를 Map으로 변환
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> userMap = objectMapper.convertValue(singleUser, Map.class);
+
+            // 필요 없는 필드 제거
+            userMap.remove("password");
+            userMap.remove("createdAt");
+            userMap.remove("updatedAt");
+            userMap.remove("deletedAt");
+
+            return ResponseEntity.ok(Map.of("status", "success", "user", userMap));
         } catch (Exception e) {
             logger.error("Error fetching user: ", e);
             return ResponseEntity.status(500).body(Map.of("message", "Internal Server Error"));
@@ -49,17 +63,29 @@ public class UserController {
         try {
 
                 User updatedUser = userService.updateUser(userId, userData, avatar);
-                return ResponseEntity.status(201).body(Map.of("message", "User Updated Successfully", "user", updatedUser));
+
+                // User 객체를 Map으로 변환
+                ObjectMapper objectMapper = new ObjectMapper();
+                Map<String, Object> userMap = objectMapper.convertValue(updatedUser, Map.class);
+
+                // 필요 없는 필드 제거
+                userMap.remove("password");
+                userMap.remove("createdAt");
+                userMap.remove("updatedAt");
+                userMap.remove("deletedAt");
+                return ResponseEntity.status(201).body(Map.of("message", "User Updated Successfully", "user", userMap));
         } catch (Exception e) {
             logger.error("Error updating user: ", e);
             return ResponseEntity.status(500).body(Map.of("message", "Internal Server Error"));
         }
     }
 
-    @DeleteMapping("/")
-    public ResponseEntity<?> deleteUser(@RequestParam Map<String, String> user) {
+    @DeleteMapping
+    public ResponseEntity<?> deleteUser(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenUtil.getUserIdFromToken(token);
         try {
-            userService.deleteUser(Long.parseLong(user.get("user_id")));
+            userService.deleteUser(userId);
             return ResponseEntity.ok(Map.of("message", "User Deleted Successfully"));
         } catch (Exception e) {
             logger.error("Error deleting user: ", e);
